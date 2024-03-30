@@ -1,6 +1,10 @@
 # WebShell
 
-This is a simple webshell developed in PHP that allows you to explore the files and directories of a web server from your browser and execute commands.
+This is a simple minimal webshell developed in PHP that allows you to explore the files and directories of a web server from your browser and execute commands.
+
+![Explorer](webshell-explorer.png)
+![File Open](webshell-explorer-file.png)
+![Server Info](webshell-phpinfo.png)
 
 ## Features
 
