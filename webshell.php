@@ -58,23 +58,24 @@ function actionExplorer(){
     $file = $_GET['file'];
     $content = showContent($file);
   }
+  if (!isset($content)):
     echo '<div class="breadcrumb"><strong>Jump:</strong> ';
-            $breadcrumbs = explode('/', $dir);
-            $path = '';
-            foreach ($breadcrumbs as $breadcrumb) {
-                $path .= $breadcrumb . '/';
-                if ($breadcrumb != '.') {
-                    echo '<a href="?dir=' . rtrim($path, '/') . '">' . $breadcrumb . '</a> / ';
-                }
-            }
-            
+    $breadcrumbs = explode('/', $dir);
+    $path = '';
+    foreach ($breadcrumbs as $breadcrumb) {
+      $path .= $breadcrumb . '/';
+      if ($breadcrumb != '.') {
+        echo '<a href="?dir=' . rtrim($path, '/') . '">' . $breadcrumb . '</a> / ';
+      }
+    }     
     echo  '</div>';
+  endif;
          if (isset($content)):
             echo '<div class="file-content">
-                <h2>'. basename($file) .'</h2>
-                <p><a href="?dir='. urlencode(dirname($file)) .'">Back</a></p>
+                <h2>File: '. basename($file) .'</h2>
+                <p><a href="?dir='. urlencode(dirname($file)) .'">< Back</a></p>
                 <pre style="overflow:auto;" class="result">'. htmlspecialchars($content).'</pre>
-                <p><a href="?dir='. urlencode(dirname($file)).'">Back</a></p>
+                <p><a href="?dir='. urlencode(dirname($file)).'">< Back</a></p>
             </div>';
         else:
             echo '<div class="file-browser">
