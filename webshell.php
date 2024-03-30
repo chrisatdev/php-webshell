@@ -230,7 +230,7 @@ function actionExplorer(){
 }
 
 function actionServerInfo(){
-  echo '<pre style="overflow:auto" class="result">';
+  echo '<pre style="overflow:auto; margin-top:10px;" class="result">';
   phpinfo();
   echo '<pre>';
 }
