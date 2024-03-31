@@ -4,7 +4,7 @@ function showContent($file) {
     if (is_file($file)) {
         return file_get_contents($file);
     } else {
-        return "No se pudo abrir el archivo.";
+        return "The file could not be opened.";
     }
 }
 
@@ -267,7 +267,6 @@ button{background-color:#000; border:none; color:#fff; cursor:pointer; padding: 
     margin: 20px auto;
     background-color: #202020;
     padding: 20px;
-    /* box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);*/
 }
 
 h1 {
