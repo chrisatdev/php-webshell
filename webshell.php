@@ -1,4 +1,9 @@
 <?php
+/**
+ * Use at your own risk
+ * License: MIT
+ **/
+
 // Show file content
 function showContent($file) {
     if (is_file($file)) {
